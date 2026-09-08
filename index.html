@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visual motion perception and Signal Detection Theory</title>
+  <style>
+    :root {
+      --bg-color: #0d1117;
+      --card-bg: #161b22;
+      --card-border: #30363d;
+      --text-color: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #58a6ff;
+      --accent-hover: #388bfd;
+      --success: #238636;
+      --success-hover: #2ea043;
+      --warning: #d29922;
+      --slider-track: #21262d;
+      --slider-thumb: #58a6ff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 14px 18px 24px 18px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 10px;
+      max-width: 800px;
+    }
+
+    header h1 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: #f0f6fc;
+      letter-spacing: 0.3px;
+    }
+
+    /* RDK Display Area */
+    .display-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 12px;
+      position: relative;
+    }
+
+    .canvas-wrapper {
+      position: relative;
+      background: #000000;
+      border-radius: 50%;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.8), 0 0 0 2px #30363d;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    canvas {
+      display: block;
+      background-color: #000000;
+      border-radius: 50%;
+    }
+
+    .direction-hint {
+      margin-top: 5px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      letter-spacing: 0.2px;
+    }
+
+    .direction-hint strong {
+      color: var(--accent);
+    }
+
+    /* Bottom Control Panel */
+    .controls-panel {
+      width: 100%;
+      max-width: 860px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 14px 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* Sliders Grid */
+    .sliders-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      column-gap: 20px;
+      row-gap: 12px;
+    }
+
+    .slider-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .slider-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 0.83rem;
+    }
+
+    .slider-title {
+      font-weight: 500;
+      color: var(--text-color);
+    }
+
+    .slider-value {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--accent);
+      background: #21262d;
+      padding: 1px 6px;
+      border-radius: 4px;
+      border: 1px solid #30363d;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      background: var(--slider-track);
+      border-radius: 3px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--slider-thumb);
+      cursor: pointer;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+      transition: transform 0.1s ease, background-color 0.15s ease;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+      background: #79c0ff;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--slider-thumb);
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Buttons Row */
+    .buttons-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding-top: 4px;
+      border-top: 1px solid #21262d;
+    }
+
+    .btn {
+      appearance: none;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      padding: 8px 15px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .btn-reset {
+      background-color: var(--accent);
+      color: #0d1117;
+    }
+
+    .btn-reset:hover {
+      background-color: var(--accent-hover);
+      color: #ffffff;
+      box-shadow: 0 0 10px rgba(88, 166, 255, 0.4);
+    }
+
+    .btn-reveal {
+      background-color: #21262d;
+      border-color: #363b42;
+      color: #e6edf3;
+    }
+
+    .btn-reveal:hover {
+      background-color: #30363d;
+      border-color: #8b949e;
+    }
+
+    /* Response buttons for SDT testing */
+    .sdt-response-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #0d1117;
+      padding: 4px 8px;
+      border-radius: 8px;
+      border: 1px solid #30363d;
+    }
+
+    .sdt-label {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-right: 2px;
+    }
+
+    .btn-decision {
+      font-size: 0.8rem;
+      padding: 5px 11px;
+      border-radius: 5px;
+      border: 1px solid #30363d;
+      background: #161b22;
+      color: var(--text-color);
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.15s ease;
+    }
+
+    .btn-decision:hover {
+      background: #21262d;
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    /* Result / Answer Display Box */
+    .answer-box {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 10px 16px;
+      text-align: center;
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .answer-box.revealed-zero {
+      border-color: #d29922;
+      background: rgba(210, 153, 34, 0.1);
+    }
+
+    .answer-box.revealed-signal {
+      border-color: #2ea043;
+      background: rgba(46, 160, 67, 0.12);
+    }
+
+    .answer-text {
+      font-size: 0.96rem;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
+
+    .answer-text.hidden-state {
+      color: var(--text-muted);
+      font-weight: 400;
+      font-style: italic;
+    }
+
+    .answer-text.revealed-signal-text {
+      color: #3fb950;
+    }
+
+    .answer-text.revealed-zero-text {
+      color: #e3b341;
+    }
+
+    /* SDT Stats Tally Bar */
+    .stats-bar {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      background: #0d1117;
+      padding: 7px 12px;
+      border-radius: 6px;
+      border: 1px solid #21262d;
+    }
+
+    .stat-item {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .stat-item strong {
+      color: var(--text-color);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    .stat-item sub {
+      font-size: 0.72em;
+      bottom: -0.2em;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Visual motion perception and Signal Detection Theory</h1>
+  </header>
+
+  <!-- RDK Visual Stimulus Aperture -->
+  <main class="display-container">
+    <div class="canvas-wrapper">
+      <canvas id="rdkCanvas" width="480" height="480"></canvas>
+    </div>
+    <div class="direction-hint">
+      Signal motion direction: <strong>Rightward (0&deg; &rarr;)</strong> &bull; Fixate on the central red cross
+    </div>
+  </main>
+
+  <!-- Controls at the Bottom -->
+  <footer class="controls-panel">
+    <!-- Sliders Grid -->
+    <div class="sliders-grid">
+      <!-- 1. Number of dots (range: 100-600, default: 300) -->
+      <div class="slider-group">
+        <div class="slider-label-row">
+          <span class="slider-title">Number of dots</span>
+          <span class="slider-value" id="valNumDots">300</span>
+        </div>
+        <input type="range" id="sliderNumDots" min="100" max="600" step="10" value="300">
+      </div>
+
+      <!-- 2. Coherence (%) (range: 0->80, default: 15) -->
+      <div class="slider-group">
+        <div class="slider-label-row">
+          <span class="slider-title">Coherence (%)</span>
+          <span class="slider-value" id="valCoherence">15%</span>
+        </div>
+        <input type="range" id="sliderCoherence" min="0" max="80" step="1" value="15">
+      </div>
+
+      <!-- 3. Radius of dots (pix, default: 3) -->
+      <div class="slider-group">
+        <div class="slider-label-row">
+          <span class="slider-title">Radius of dots (pix)</span>
+          <span class="slider-value" id="valDotRadius">3</span>
+        </div>
+        <input type="range" id="sliderDotRadius" min="1" max="10" step="0.5" value="3">
+      </div>
+
+      <!-- 4. Speed of dots (pix/sec) (range: 10-300, default: 120) -->
+      <div class="slider-group">
+        <div class="slider-label-row">
+          <span class="slider-title">Speed of dots (pix/sec)</span>
+          <span class="slider-value" id="valSpeed">120</span>
+        </div>
+        <input type="range" id="sliderSpeed" min="10" max="300" step="5" value="120">
+      </div>
+
+      <!-- 5. Lifetime of dots (milliseconds) (range: 30->500, default: 100 ms) -->
+      <div class="slider-group">
+        <div class="slider-label-row">
+          <span class="slider-title">Lifetime of dots (ms)</span>
+          <span class="slider-value" id="valLifetime">100 ms</span>
+        </div>
+        <input type="range" id="sliderLifetime" min="30" max="500" step="10" value="100">
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="buttons-row">
+      <button class="btn btn-reset" id="btnReset" title="Refresh pattern & pick 0% or slider coherence">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+          <path fill-rule="evenodd" d="M8 3a5 5 0 104.546 2.914.5.5 0 01.908-.417A6 6 0 118 2v1z"/>
+          <path d="M8 0a.5.5 0 01.5.5v3a.5.5 0 01-.5.5H5a.5.5 0 010-1h2.155A5.99 5.99 0 008 1.05V.5A.5.5 0 018 0z"/>
+        </svg>
+        Reset Stimulus
+      </button>
+
+      <!-- SDT Decision buttons for observer -->
+      <div class="sdt-response-group">
+        <span class="sdt-label">Your decision:</span>
+        <button class="btn-decision" id="btnJudgeNoise" title="Decide: Noise (Zero Coherence)">Noise</button>
+        <button class="btn-decision" id="btnJudgeSignal" title="Decide: Signal Present (Coherent Motion)">Signal &rarr;</button>
+      </div>
+
+      <button class="btn btn-reveal" id="btnReveal" title="Reveal actual stimulus coherence (Requires password)">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 2c-3.5 0-6.5 2.5-7.5 6 1 3.5 4 6 7.5 6s6.5-2.5 7.5-6c-1-3.5-4-6-7.5-6zm0 10a4 4 0 110-8 4 4 0 010 8zm0-6.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5z"/>
+        </svg>
+        Reveal Answer
+      </button>
+
+      <button class="btn btn-reveal" id="btnToggleZ" title="Show/Hide z-score fields (Requires password)">
+        Show z-scores
+      </button>
+
+      <button class="btn btn-reveal" id="btnToggleDPrime" title="Show/Hide d' sensitivity index (Requires password)">
+        Calculate d'
+      </button>
+    </div>
+
+    <!-- Answer Box Display -->
+    <div class="answer-box" id="answerBox">
+      <span class="answer-text hidden-state" id="answerText">
+        Stimulus ready. Observe the pattern, make your decision or click <strong>"Reveal answer"</strong>.
+      </span>
+    </div>
+
+    <!-- SDT Scoreboard / Feedback Stats -->
+    <div class="stats-bar" id="statsBar">
+      <span class="stat-item">Trials: <strong id="statTrials">0</strong></span>
+      <span class="stat-item">Hits: <strong id="statHits">0</strong></span>
+      <span class="stat-item">Misses: <strong id="statMisses">0</strong></span>
+      <span class="stat-item">False Alarms: <strong id="statFA">0</strong></span>
+      <span class="stat-item">Correct Rejections: <strong id="statCR">0</strong></span>
+      <span class="stat-item">Accuracy: <strong id="statAccuracy">--</strong></span>
+      <span class="stat-item" id="statZHitsContainer" style="display: none;">z<sub>hits</sub>: <strong id="statZHits">--</strong></span>
+      <span class="stat-item" id="statZFAContainer" style="display: none;">z<sub>fa</sub>: <strong id="statZFA">--</strong></span>
+      <span class="stat-item" id="statDPrimeContainer" style="display: none;">d': <strong id="statDPrime">--</strong></span>
+      <span class="stat-item" id="statCContainer" style="display: none;">c: <strong id="statC">--</strong></span>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      // DOM Elements
+      const canvas = document.getElementById('rdkCanvas');
+      const ctx = canvas.getContext('2d');
+
+      const sliderNumDots = document.getElementById('sliderNumDots');
+      const sliderCoherence = document.getElementById('sliderCoherence');
+      const sliderDotRadius = document.getElementById('sliderDotRadius');
+      const sliderSpeed = document.getElementById('sliderSpeed');
+      const sliderLifetime = document.getElementById('sliderLifetime');
+
+      const valNumDots = document.getElementById('valNumDots');
+      const valCoherence = document.getElementById('valCoherence');
+      const valDotRadius = document.getElementById('valDotRadius');
+      const valSpeed = document.getElementById('valSpeed');
+      const valLifetime = document.getElementById('valLifetime');
+
+      const btnReset = document.getElementById('btnReset');
+      const btnReveal = document.getElementById('btnReveal');
+      const btnToggleZ = document.getElementById('btnToggleZ');
+      const btnToggleDPrime = document.getElementById('btnToggleDPrime');
+      const btnJudgeNoise = document.getElementById('btnJudgeNoise');
+      const btnJudgeSignal = document.getElementById('btnJudgeSignal');
+
+      const answerBox = document.getElementById('answerBox');
+      const answerText = document.getElementById('answerText');
+
+      const statTrials = document.getElementById('statTrials');
+      const statHits = document.getElementById('statHits');
+      const statMisses = document.getElementById('statMisses');
+      const statFA = document.getElementById('statFA');
+      const statCR = document.getElementById('statCR');
+      const statAccuracy = document.getElementById('statAccuracy');
+      const statZHitsContainer = document.getElementById('statZHitsContainer');
+      const statZFAContainer = document.getElementById('statZFAContainer');
+      const statZHits = document.getElementById('statZHits');
+      const statZFA = document.getElementById('statZFA');
+      const statDPrimeContainer = document.getElementById('statDPrimeContainer');
+      const statDPrime = document.getElementById('statDPrime');
+      const statCContainer = document.getElementById('statCContainer');
+      const statC = document.getElementById('statC');
+
+      // High-DPI Canvas Scaling (Enlarged dot field)
+      const logicalSize = 480;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = logicalSize * dpr;
+      canvas.height = logicalSize * dpr;
+      canvas.style.width = logicalSize + 'px';
+      canvas.style.height = logicalSize + 'px';
+      ctx.scale(dpr, dpr);
+
+      const centerX = logicalSize / 2;
+      const centerY = logicalSize / 2;
+      const apertureRadius = logicalSize / 2 - 10; // 230px radius
+
+      // Experiment State
+      let isSignalTrial = Math.random() < 0.5; // 50% signal, 50% noise
+      let activeCoherence = isSignalTrial ? parseFloat(sliderCoherence.value) : 0;
+      let testedCoherence = parseFloat(sliderCoherence.value);
+      let isAnswerRevealed = false;
+      let userRespondedThisTrial = false;
+
+      // Visibility state for password-protected fields
+      let zScoresVisible = false;
+      let dPrimeVisible = false;
+
+      // SDT Statistics
+      let counts = {
+        hits: 0,
+        misses: 0,
+        falseAlarms: 0,
+        correctRejections: 0,
+        totalTrials: 0
+      };
+
+      // Dot Object Representation
+      class Dot {
+        constructor(maxLifetime) {
+          this.lifetime = maxLifetime;
+          this.reset(true);
+        }
+
+        reset(randomizeAge = false) {
+          // Uniform random distribution in circle of apertureRadius
+          const u = Math.random();
+          const r = apertureRadius * Math.sqrt(u);
+          const theta = Math.random() * 2 * Math.PI;
+
+          this.x = r * Math.cos(theta);
+          this.y = r * Math.sin(theta);
+          this.noiseTheta = Math.random() * 2 * Math.PI;
+          this.age = randomizeAge ? Math.random() * this.lifetime : 0;
+        }
+
+        update(dtSec, speed, isCoherent, maxLifetime) {
+          this.lifetime = maxLifetime;
+          this.age += dtSec * 1000;
+
+          // Check lifetime expiration
+          if (this.age >= this.lifetime) {
+            this.reset(false);
+            return;
+          }
+
+          // Move dot
+          const dir = isCoherent ? 0 : this.noiseTheta; // 0 rad = rightward
+          const dist = speed * dtSec;
+          this.x += dist * Math.cos(dir);
+          this.y += dist * Math.sin(dir);
+
+          // Check boundary
+          if (this.x * this.x + this.y * this.y > apertureRadius * apertureRadius) {
+            this.reset(false);
+          }
+        }
+      }
+
+      let dots = [];
+
+      function syncDotsCount() {
+        const targetCount = parseInt(sliderNumDots.value, 10);
+        const maxLifetime = parseFloat(sliderLifetime.value);
+        while (dots.length < targetCount) {
+          dots.push(new Dot(maxLifetime));
+        }
+        if (dots.length > targetCount) {
+          dots.length = targetCount;
+        }
+      }
+
+      // Initialize dots
+      syncDotsCount();
+
+      // Reset stimulus
+      function resetStimulus() {
+        isSignalTrial = Math.random() < 0.5;
+        testedCoherence = parseFloat(sliderCoherence.value);
+        activeCoherence = isSignalTrial ? testedCoherence : 0;
+        isAnswerRevealed = false;
+        userRespondedThisTrial = false;
+
+        const maxLifetime = parseFloat(sliderLifetime.value);
+        dots.forEach(dot => {
+          dot.lifetime = maxLifetime;
+          dot.reset(true);
+        });
+
+        answerBox.className = 'answer-box';
+        answerText.className = 'answer-text hidden-state';
+        answerText.innerHTML = 'Stimulus reset (Condition hidden). Observe the motion, then click <strong>"Reveal answer"</strong>.';
+      }
+
+      // Display ground truth answer in UI
+      function showAnswerText() {
+        isAnswerRevealed = true;
+        if (isSignalTrial && activeCoherence > 0) {
+          answerBox.className = 'answer-box revealed-signal';
+          answerText.className = 'answer-text revealed-signal-text';
+          answerText.innerHTML = 'Active Stimulus: Coherence is <strong>' + activeCoherence + '%</strong> (Signal Present &rarr;)';
+        } else {
+          answerBox.className = 'answer-box revealed-zero';
+          answerText.className = 'answer-text revealed-zero-text';
+          answerText.innerHTML = 'Active Stimulus: <strong>Zero Coherence</strong> (0% &mdash; Pure Noise)';
+        }
+      }
+
+      // Reveal answer with password protection (Braddick)
+      function handleRevealAnswer() {
+        if (isAnswerRevealed) {
+          // Already unlocked and shown for this trial
+          return;
+        }
+        const pwd = prompt('Enter password to reveal answer:');
+        if (pwd === 'Braddick') {
+          showAnswerText();
+        } else if (pwd !== null) {
+          alert('Incorrect password. The answer remains hidden.');
+        }
+      }
+
+      // Observer decision
+      function handleDecision(userSaidSignal) {
+        if (!userRespondedThisTrial) {
+          userRespondedThisTrial = true;
+          counts.totalTrials++;
+          if (isSignalTrial) {
+            if (userSaidSignal) {
+              counts.hits++;
+            } else {
+              counts.misses++;
+            }
+          } else {
+            if (userSaidSignal) {
+              counts.falseAlarms++;
+            } else {
+              counts.correctRejections++;
+            }
+          }
+          updateStatsDisplay();
+
+          if (!isAnswerRevealed) {
+            answerBox.className = 'answer-box';
+            answerText.className = 'answer-text';
+            const choiceName = userSaidSignal ? 'Signal &rarr;' : 'Noise';
+            answerText.innerHTML = 'Response recorded: <strong>' + choiceName + '</strong>. Click "Reset Stimulus" for next trial, or "Reveal Answer" to verify.';
+          }
+        }
+      }
+
+      // Toggle z-scores with password (Green)
+      function handleToggleZScores() {
+        if (!zScoresVisible) {
+          const pwd = prompt('Enter password to show z-scores:');
+          if (pwd === 'Green') {
+            zScoresVisible = true;
+            btnToggleZ.textContent = 'Hide z-scores';
+            statZHitsContainer.style.display = 'inline-flex';
+            statZFAContainer.style.display = 'inline-flex';
+            updateStatsDisplay();
+          } else if (pwd !== null) {
+            alert('Incorrect password.');
+          }
+        } else {
+          zScoresVisible = false;
+          btnToggleZ.textContent = 'Show z-scores';
+          statZHitsContainer.style.display = 'none';
+          statZFAContainer.style.display = 'none';
+        }
+      }
+
+      // Toggle d-prime and criterion c with password (Swets)
+      function handleToggleDPrime() {
+        if (!dPrimeVisible) {
+          const pwd = prompt("Enter password to calculate d':");
+          if (pwd === 'Swets') {
+            dPrimeVisible = true;
+            btnToggleDPrime.textContent = "Hide d'";
+            statDPrimeContainer.style.display = 'inline-flex';
+            statCContainer.style.display = 'inline-flex';
+            updateStatsDisplay();
+          } else if (pwd !== null) {
+            alert('Incorrect password.');
+          }
+        } else {
+          dPrimeVisible = false;
+          btnToggleDPrime.textContent = "Calculate d'";
+          statDPrimeContainer.style.display = 'none';
+          statCContainer.style.display = 'none';
+        }
+      }
+
+      // Normal Quantile Z approximation
+      function normInv(p) {
+        if (p <= 0) return -3.5;
+        if (p >= 1) return 3.5;
+        const a = [-3.969683028665376e+01, 2.209460984245205e+02, -2.759285104469687e+02, 1.383577518672690e+02, -3.066479806614716e+01, 2.506628277459239e+00];
+        const b = [-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02, 6.680131188771972e+01, -1.328068155288572e+01];
+        const c = [-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00, -2.549732539343734e+00, 4.374664141464968e+00, 2.938163982698783e+00];
+        const d = [7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e+00, 3.754408661907416e+00];
+
+        const q = p - 0.5;
+        if (Math.abs(q) <= 0.42) {
+          const r = q * q;
+          return q * (((((a[0]*r + a[1])*r + a[2])*r + a[3])*r + a[4])*r + a[5]) /
+                     (((((b[0]*r + b[1])*r + b[2])*r + b[3])*r + b[4])*r + 1.0);
+        }
+        const r = q < 0 ? p : 1.0 - p;
+        const s = Math.sqrt(-Math.log(r));
+        let z = (((((c[0]*s + c[1])*s + c[2])*s + c[3])*s + c[4])*s + c[5]) /
+                ((((d[0]*s + d[1])*s + d[2])*s + d[3])*s + 1.0);
+        return q < 0 ? -z : z;
+      }
+
+      function updateStatsDisplay() {
+        statTrials.textContent = counts.totalTrials;
+        statHits.textContent = counts.hits;
+        statMisses.textContent = counts.misses;
+        statFA.textContent = counts.falseAlarms;
+        statCR.textContent = counts.correctRejections;
+
+        const totalDecisions = counts.hits + counts.misses + counts.falseAlarms + counts.correctRejections;
+        if (totalDecisions > 0) {
+          const correct = counts.hits + counts.correctRejections;
+          statAccuracy.textContent = Math.round((correct / totalDecisions) * 100) + '%';
+        } else {
+          statAccuracy.textContent = '--';
+        }
+
+        const signalTrials = counts.hits + counts.misses;
+        const noiseTrials = counts.falseAlarms + counts.correctRejections;
+
+        if (signalTrials > 0 && noiseTrials > 0) {
+          // Standard log-linear correction
+          const hitRate = (counts.hits + 0.5) / (signalTrials + 1);
+          const faRate = (counts.falseAlarms + 0.5) / (noiseTrials + 1);
+          const zH = normInv(hitRate);
+          const zFA = normInv(faRate);
+          const dP = zH - zFA;
+          const critC = -0.5 * (zH + zFA);
+
+          statZHits.textContent = zH.toFixed(2);
+          statZFA.textContent = zFA.toFixed(2);
+          statDPrime.textContent = dP.toFixed(2);
+          statC.textContent = critC.toFixed(2);
+        } else {
+          statZHits.textContent = '--';
+          statZFA.textContent = '--';
+          statDPrime.textContent = '--';
+          statC.textContent = '--';
+        }
+      }
+
+      // Slider Listeners
+      sliderNumDots.addEventListener('input', (e) => {
+        valNumDots.textContent = e.target.value;
+        syncDotsCount();
+      });
+
+      sliderCoherence.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        valCoherence.textContent = val + '%';
+        testedCoherence = val;
+        if (isSignalTrial) {
+          activeCoherence = val;
+        }
+        if (isAnswerRevealed) {
+          showAnswerText();
+        }
+      });
+
+      sliderDotRadius.addEventListener('input', (e) => {
+        valDotRadius.textContent = e.target.value;
+      });
+
+      sliderSpeed.addEventListener('input', (e) => {
+        valSpeed.textContent = e.target.value;
+      });
+
+      sliderLifetime.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        valLifetime.textContent = val + ' ms';
+        dots.forEach(dot => dot.lifetime = val);
+      });
+
+      // Button Listeners
+      btnReset.addEventListener('click', resetStimulus);
+      btnReveal.addEventListener('click', handleRevealAnswer);
+      btnToggleZ.addEventListener('click', handleToggleZScores);
+      btnToggleDPrime.addEventListener('click', handleToggleDPrime);
+
+      btnJudgeNoise.addEventListener('click', () => handleDecision(false));
+      btnJudgeSignal.addEventListener('click', () => handleDecision(true));
+
+      // Animation Loop
+      let lastTime = performance.now();
+
+      function animate(now) {
+        requestAnimationFrame(animate);
+
+        const dtMs = now - lastTime;
+        lastTime = now;
+        const dtSec = Math.min(dtMs / 1000, 0.1);
+
+        const speed = parseFloat(sliderSpeed.value);
+        const dotRadius = parseFloat(sliderDotRadius.value);
+        const maxLifetime = parseFloat(sliderLifetime.value);
+        const totalDots = dots.length;
+
+        const numCoherent = Math.round((activeCoherence / 100) * totalDots);
+
+        // Clear Canvas
+        ctx.clearRect(0, 0, logicalSize, logicalSize);
+
+        // Draw circular aperture background
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, apertureRadius, 0, 2 * Math.PI);
+        ctx.fillStyle = '#000000';
+        ctx.fill();
+        ctx.clip(); // Restrict dots to aperture
+
+        // Update Dots
+        for (let i = 0; i < totalDots; i++) {
+          const isCoherent = i < numCoherent;
+          dots[i].update(dtSec, speed, isCoherent, maxLifetime);
+        }
+
+        // Draw dots (excluding 10-pixel protection zone around central fixation)
+        ctx.fillStyle = '#ffffff';
+        const protectionRadiusSq = 10 * 10; // 100 px^2
+
+        for (let i = 0; i < totalDots; i++) {
+          const d = dots[i];
+          const distSq = d.x * d.x + d.y * d.y;
+          // Protection zone check: dots inside 10px radius are not visible
+          if (distSq < protectionRadiusSq) {
+            continue;
+          }
+          ctx.beginPath();
+          ctx.arc(centerX + d.x, centerY + d.y, dotRadius, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+
+        // Protection zone inner fill to guarantee zero overlap
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 10, 0, 2 * Math.PI);
+        ctx.fillStyle = '#000000';
+        ctx.fill();
+
+        ctx.restore();
+
+        // Draw aperture circular boundary ring
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, apertureRadius, 0, 2 * Math.PI);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#21262d';
+        ctx.stroke();
+
+        // Draw fixation cross: quadrupled thickness (lineWidth = 6)
+        ctx.strokeStyle = '#ff3333';
+        ctx.lineWidth = 6;
+        ctx.lineCap = 'square';
+        const crossSize = 8;
+        ctx.beginPath();
+        ctx.moveTo(centerX - crossSize, centerY);
+        ctx.lineTo(centerX + crossSize, centerY);
+        ctx.moveTo(centerX, centerY - crossSize);
+        ctx.lineTo(centerX, centerY + crossSize);
+        ctx.stroke();
+      }
+
+      requestAnimationFrame(animate);
+      resetStimulus();
+    })();
+  </script>
+</body>
+</html>

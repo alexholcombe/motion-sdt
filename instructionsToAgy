@@ -1,0 +1,46 @@
+Make two webpages with the same underlying functionality. 
+
+## First webpage
+
+In the dotMotionSDTexperiment folder
+Make a webpage that displays a random-dot kinematogram with sliders for coherence.
+
+Buttons and sliders are at the bottom.
+
+Sliders are:
+- Number of dots (range: 100-600)
+- Coherence (%) (range: 0->30)
+- Radius of dots (pix)
+- Speed of dots (pix/sec) (range: 10-300)
+- Lifetime of dots (milliseconds) (range:30->500)
+
+Pressing a reset button refreshes the dot pattern and randomly chooses whether the dot pattern will have zero coherence or the coherence specified by the slider.
+
+A button at the bottom, "reveal answer", adds text indicating whether it is zero coherence or instead prints the coherence set by the slider.
+
+# After initial creation,
+
+Quadruple the fixation cross thickness and create a protection zone around it of 20 pixel radius where dots are not visible.
+
+Substitute the subtitle "Visual motion perception and Signal Detection Theory" for the title, and make the dot field radius correspondingly larger.
+
+Change coherence range to go up to 40%
+
+Change "0% Noise" label to "Noise".
+
+Change default dot radius to 3.
+
+Change default number of dots to 300.
+
+Change default lifetime of dots to 100 ms.
+
+When click "Reveal Answer" button, prompt for password. Password is "Braddick" and if not answered correctly, the answer is not shown.  
+
+Delete the "Resume" button
+
+Add small fields at bottom, next to accuracy, for z(hits) and z(fa), but keep them hidden unless someone clicks a "Show z-scores" button, which is to the right of "Reveal Answer", but it prompts for a password before it shows the fields, and the password is "Green". Continually show the z(hits) and z(fa) fields unless someone presses the button again, which has changed labels to "Hide z-scores".  The "hits" and "fa" text next to "z" should be in subscript.
+
+ and create a new button, "Calculate d'" to right of "Show z-scores" button, but require a password, which is "Swets", otherwise do not show the "d'" field. Once the password is entered, continually show and update the d field unless someone presses that button again, which has changed labels to "Hide z-scores".
+
+
+
